@@ -15,7 +15,7 @@ def create_app():
     db.init_app(app)
     migrate = Migrate(app, db)
     mail = Mail(app)
-    app.extensions['mail'] = mail # Explicitly adding to extensions just in case (optional, Mail(app) usually does this)
+    app.extensions['mail'] = mail 
     login_manager = LoginManager(app)
     login_manager.login_view = 'auth.login'
 
@@ -29,12 +29,14 @@ def create_app():
         from routes.auth_routes import auth_bp
         from routes.admin_routes import admin_bp
         from routes.student_routes import student_bp
+        from routes.chatbot_routes import chatbot_bp
         
         app.register_blueprint(auth_bp)
         app.register_blueprint(admin_bp, url_prefix='/admin')
         app.register_blueprint(student_bp, url_prefix='/student')
-    except ImportError:
-        print("Blueprints not fully implemented yet.")
+        app.register_blueprint(chatbot_bp)
+    except ImportError as e:
+        print(f"Blueprints error: {e}")
 
     @app.route('/')
     def index():

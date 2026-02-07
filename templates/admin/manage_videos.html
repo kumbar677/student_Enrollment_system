@@ -1,0 +1,158 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Manage Content{% endblock %}
+
+{% block content %}
+<div class="row mb-4 animate-slide-up">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="fw-bold text-dark mb-1">{{ course.name }}</h4>
+                <p class="text-secondary mb-0">Curriculum Management</p>
+            </div>
+            <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Back to Courses
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 animate-slide-up" style="animation-delay: 0.1s;">
+    <!-- Add Content Form -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm sticky-top" style="top: 90px; z-index: 1;">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold text-dark">Add New Video</h6>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('admin.manage_videos', course_id=course.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Section Title</label>
+                        <input type="text" name="section_title" class="form-control" list="sectionsList" required
+                            placeholder="e.g. Introduction">
+                        <datalist id="sectionsList">
+                            {% for section in sections %}
+                            <option value="{{ section.title }}">
+                                {% endfor %}
+                        </datalist>
+                        <div class="form-text">Group videos into sections.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Video Title</label>
+                        <input type="text" name="title" class="form-control" required
+                            placeholder="e.g. Course Overview">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold text-muted">YouTube URL</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fab fa-youtube"></i></span>
+                            <input type="url" name="video_url" class="form-control" required
+                                placeholder="https://youtube.com/...">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold text-muted">Duration (Optional)</label>
+                        <input type="text" name="duration" class="form-control" placeholder="e.g. 10:30">
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary fw-bold">
+                            <i class="fas fa-plus-circle me-1"></i> Add Video
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content List -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark">Course Structure</h6>
+                <span class="badge bg-light text-dark border">{{ sections|length }} Sections</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="accordion accordion-flush" id="curriculumAccordion">
+                    {% for section in sections %}
+                    <div class="accordion-item border-bottom">
+                        <h2 class="accordion-header" id="heading{{ section.id }}">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} fw-bold"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ section.id }}">
+                                <span class="me-auto">{{ section.title }}</span>
+                                <span class="badge bg-primary rounded-pill me-2">{{ section.videos|length }}
+                                    Lectures</span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ section.id }}"
+                            class="accordion-collapse collapse {% if loop.first %}show{% endif %}"
+                            data-bs-parent="#curriculumAccordion">
+                            <div class="accordion-body p-0">
+                                <ul class="list-group list-group-flush">
+                                    {% for video in section.videos %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light rounded p-2 me-3 text-danger">
+                                                <i class="fab fa-youtube fa-lg"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 text-dark">{{ video.title }}</h6>
+                                                <small class="text-muted"><i class="far fa-clock me-1"></i> {{
+                                                    video.duration or 'N/A' }}</small>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <form action="{{ url_for('admin.delete_course_video', video_id=video.id) }}"
+                                                method="POST" class="d-inline"
+                                                onsubmit="return confirm('Delete this video?');">
+                                                <button type="submit" class="btn btn-light btn-sm text-danger shadow-sm"
+                                                    title="Delete">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3 text-muted opacity-50">
+                            <i class="fas fa-layer-group fa-3x"></i>
+                        </div>
+                        <h6 class="text-muted">No content added yet.</h6>
+                        <p class="small text-muted">Use the form to add your first section and video.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Orphaned Videos (Legacy Support) -->
+            {% if orphaned_videos %}
+            <div class="card-footer bg-warning bg-opacity-10 border-top border-warning p-3">
+                <h6 class="text-warning-dark mb-2"><i class="fas fa-exclamation-triangle me-1"></i> Uncategorized Videos
+                </h6>
+                <ul class="list-group list-group-flush bg-transparent">
+                    {% for video in orphaned_videos %}
+                    <li
+                        class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0 py-2 border-warning border-opacity-25">
+                        <span class="text-dark small">{{ video.title }}</span>
+                        <form action="{{ url_for('admin.delete_course_video', video_id=video.id) }}" method="POST"
+                            class="d-inline" onsubmit="return confirm('Delete?');">
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i
+                                    class="fas fa-times"></i></button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

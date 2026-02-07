@@ -1,0 +1,13 @@
+/* Authentication Pages Styles */
+.auth-wrapper {
+    min-height: 80vh;
+}
+
+.auth-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: 16px 16px 0 0;
+}
+
+.auth-footer {
+    border-radius: 0 0 16px 16px;
+}

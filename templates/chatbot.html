@@ -1,0 +1,294 @@
+<style>
+    /* Chatbot Widget Styles */
+    #chatbot-widget-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1050;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Toggle Button */
+    #chatbot-toggle-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), #5D4037);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(93, 64, 55, 0.3);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #chatbot-toggle-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(93, 64, 55, 0.4);
+    }
+
+    /* Chat WIndow */
+    #chatbot-window {
+        width: 350px;
+        height: 500px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+        display: none;
+        /* Hidden by default */
+        flex-direction: column;
+        overflow: hidden;
+        margin-bottom: 20px;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        opacity: 0;
+        transform: translateY(20px);
+        border: 1px solid var(--secondary-color);
+    }
+
+    #chatbot-window.visible {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Header */
+    #chatbot-header {
+        background: linear-gradient(135deg, var(--primary-color), #5D4037);
+        color: white;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    #chatbot-header h5 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    #chatbot-close-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.8;
+    }
+
+    #chatbot-close-btn:hover {
+        opacity: 1;
+    }
+
+    /* Messages Area */
+    #chatbot-messages {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: var(--bg-body);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .message {
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+
+    .message.user {
+        align-self: flex-end;
+        background-color: var(--primary-color);
+        color: white;
+        border-bottom-right-radius: 2px;
+    }
+
+    .message.bot {
+        align-self: flex-start;
+        background-color: white;
+        color: var(--text-color);
+        border: 1px solid #e0e0e0;
+        border-bottom-left-radius: 2px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .message.typing {
+        font-style: italic;
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 5px;
+    }
+
+    /* Input Area */
+    #chatbot-input-area {
+        padding: 15px;
+        background-color: white;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+    }
+
+    #chatbot-input {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid var(--secondary-color);
+        border-radius: 20px;
+        outline: none;
+        font-size: 14px;
+        background-color: var(--bg-body);
+        color: var(--text-color);
+    }
+
+    #chatbot-input:focus {
+        border-color: var(--primary-color);
+    }
+
+    #chatbot-send-btn {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+
+    #chatbot-send-btn:hover {
+        background: var(--primary-hover);
+    }
+</style>
+
+<div id="chatbot-widget-container">
+    <div id="chatbot-window">
+        <div id="chatbot-header">
+            <div>
+                <i class="fas fa-robot me-2"></i>
+                <h5>JSS SMPU Bot</h5>
+            </div>
+            <button id="chatbot-close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chatbot-messages">
+            <div class="message bot">
+                Hi there! I'm JSS SMPU Bot. How can I help you today?
+            </div>
+        </div>
+        <div id="chatbot-input-area">
+            <input type="text" id="chatbot-input" placeholder="Type a message...">
+            <button id="chatbot-send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <button id="chatbot-toggle-btn">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const widgetContainer = document.getElementById('chatbot-widget-container');
+        const toggleBtn = document.getElementById('chatbot-toggle-btn');
+        const closeBtn = document.getElementById('chatbot-close-btn');
+        const chatWindow = document.getElementById('chatbot-window');
+        const messagesDiv = document.getElementById('chatbot-messages');
+        const inputField = document.getElementById('chatbot-input');
+        const sendBtn = document.getElementById('chatbot-send-btn');
+        const toggleIcon = toggleBtn.querySelector('i');
+
+        let isOpen = false;
+
+        // Toggle Chat Window
+        function toggleChat() {
+            isOpen = !isOpen;
+            if (isOpen) {
+                chatWindow.classList.add('visible');
+                toggleIcon.classList.remove('fa-comment-dots');
+                toggleIcon.classList.add('fa-chevron-down');
+                inputField.focus();
+            } else {
+                chatWindow.classList.remove('visible');
+                toggleIcon.classList.remove('fa-chevron-down');
+                toggleIcon.classList.add('fa-comment-dots');
+            }
+        }
+
+        toggleBtn.addEventListener('click', toggleChat);
+        closeBtn.addEventListener('click', toggleChat);
+
+        // Send Message
+        function sendMessage() {
+            const message = inputField.value.trim();
+            if (!message) return;
+
+            // Add user message
+            appendMessage('user', message);
+            inputField.value = '';
+
+            // Show typing indicator
+            const typingId = 'typing-' + Date.now();
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message typing';
+            typingDiv.id = typingId;
+            typingDiv.innerText = 'JSS SMPU Bot is thinking...';
+            messagesDiv.appendChild(typingDiv);
+            scrollToBottom();
+
+            // Send to backend
+            fetch('/chatbot/ask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Remove typing indicator
+                    const typingEl = document.getElementById(typingId);
+                    if (typingEl) typingEl.remove();
+
+                    // Add bot response
+                    appendMessage('bot', data.response);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const typingEl = document.getElementById(typingId);
+                    if (typingEl) typingEl.remove();
+                    appendMessage('bot', 'Sorry, I am having trouble connecting to the server.');
+                });
+        }
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerText = text;
+            messagesDiv.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        inputField.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    });
+</script>

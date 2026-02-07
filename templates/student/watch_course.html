@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.name }} - Learning Player{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+<style>
+    /* Watch Course Specifics */
+    body {
+        overflow: hidden;
+        /* Prevent body scroll, handle in sidebar */
+    }
+
+    .player-layout {
+        display: flex;
+        height: calc(100vh - 76px);
+        /* Adjust based on navbar height */
+        background: #0f172a;
+        /* Slate 900 */
+    }
+
+    .video-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: black;
+        position: relative;
+    }
+
+    .sidebar-section {
+        width: 350px;
+        background: white;
+        border-left: 1px solid rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+        transition: transform 0.3s ease;
+    }
+
+    @media (max-width: 992px) {
+        .player-layout {
+            flex-direction: column;
+            height: auto;
+            overflow-y: auto;
+        }
+
+        .video-section {
+            height: 60vh;
+        }
+
+        .sidebar-section {
+            width: 100%;
+            height: auto;
+            border-left: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            overflow: auto;
+        }
+    }
+
+    /* Modern Scrollbar for Sidebar */
+    .sidebar-content {
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .sidebar-content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .sidebar-content::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    /* Playlist Items */
+    .playlist-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 1rem;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: all 0.2s;
+    }
+
+    .playlist-item:hover {
+        background: #f8fafc;
+    }
+
+    .playlist-item.active {
+        background: #eff6ff;
+        border-left: 4px solid var(--primary);
+    }
+
+    .playlist-item.active .title-text {
+        color: var(--primary-dark);
+        font-weight: 600;
+    }
+
+    .status-icon {
+        margin-right: 12px;
+        margin-top: 2px;
+        color: #94a3b8;
+    }
+
+    .playlist-item.active .status-icon {
+        color: var(--primary);
+    }
+
+    /* Player Controls */
+    .custom-controls-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 2rem;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .video-section:hover .custom-controls-overlay {
+        opacity: 1;
+    }
+
+    .control-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+        transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+        background: white;
+        color: black;
+        transform: scale(1.1);
+    }
+
+    .nav-breadcrumb {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 20;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .video-section:hover .nav-breadcrumb {
+        opacity: 1;
+    }
+
+    .nav-breadcrumb a {
+        color: white;
+        text-decoration: none;
+        opacity: 0.8;
+    }
+
+    .nav-breadcrumb a:hover {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="player-layout fade-in">
+    <!-- Video Player Section -->
+    <div class="video-section">
+
+        <!-- Breadcrumb Overlay -->
+        <div class="nav-breadcrumb">
+            <a href="{{ url_for('student.dashboard') }}"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            <span class="opacity-50">/</span>
+            <span class="opacity-75">{{ course.name }}</span>
+        </div>
+
+        <div id="videoContainer"
+            class="ratio ratio-16x9 w-100 h-100 d-flex align-items-center justify-content-center bg-black">
+            <!-- The API will replace this div with the iframe -->
+            <div id="mainPlayer"></div>
+
+            <!-- Placeholder for No Video -->
+            <div id="noVideoMessage" class="d-none flex-column align-items-center text-white">
+                <div class="bg-white bg-opacity-10 p-4 rounded-circle mb-3 backdrop-blur">
+                    <i class="fas fa-play fa-3x"></i>
+                </div>
+                <h3>Start Learning</h3>
+                <p class="text-white-50">Select a lesson from the playlist to begin.</p>
+            </div>
+        </div>
+
+        <!-- Custom Controls Overlay -->
+        <div class="custom-controls-overlay" id="customControls">
+            <button class="control-btn" onclick="seek(-10)" title="Rewind 10s"><i class="fas fa-undo"></i></button>
+            <button class="control-btn" onclick="togglePlay()" id="playPauseBtn" title="Play/Pause"><i
+                    class="fas fa-play"></i></button>
+            <button class="control-btn" onclick="seek(10)" title="Forward 10s"><i class="fas fa-redo"></i></button>
+            <button class="control-btn" onclick="toggleFullscreen()" title="Fullscreen"><i
+                    class="fas fa-expand"></i></button>
+        </div>
+    </div>
+
+    <!-- Playlist Sidebar -->
+    <div class="sidebar-section">
+        <div class="p-4 border-bottom bg-light">
+            <h5 class="fw-bold mb-1 text-dark">Course Content</h5>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 35%"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-2">
+                <small class="text-muted">35% Completed</small>
+                <small class="text-muted text-end">{{ sections|length }} Sections</small>
+            </div>
+        </div>
+
+        <div class="sidebar-content" id="courseAccordion">
+            {% for section in sections %}
+            <div class="bg-light px-3 py-2 border-bottom fw-bold text-muted text-uppercase small ls-1 d-flex justify-content-between align-items-center"
+                data-bs-toggle="collapse" data-bs-target="#collapse{{ section.id }}" role="button">
+                {{ section.title }}
+                <i class="fas fa-chevron-down small"></i>
+            </div>
+
+            <div id="collapse{{ section.id }}" class="collapse show" data-bs-parent="#courseAccordion">
+                {% for video in section.videos|sort(attribute='sequence_order') %}
+                <div class="playlist-item video-item"
+                    onclick="playVideo('{{ video.video_url }}', '{{ video.title }}', '{{ section.title }}', this)">
+                    <div class="status-icon">
+                        <i class="far fa-circle"></i>
+                        <!-- Use fa-check-circle text-success when completed -->
+                    </div>
+                    <div>
+                        <div class="title-text small mb-1">{{ video.title }}</div>
+                        <div class="d-flex align-items-center text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-play-circle me-1 opacity-75"></i>
+                            {{ video.duration or "Video" }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <!-- Orphans -->
+            {% if orphaned_videos %}
+            <div class="bg-light px-3 py-2 border-bottom fw-bold text-muted text-uppercase small ls-1 d-flex justify-content-between align-items-center"
+                data-bs-toggle="collapse" data-bs-target="#collapseOrphan" role="button">
+                General Videos
+                <i class="fas fa-chevron-down small"></i>
+            </div>
+            <div id="collapseOrphan" class="collapse" data-bs-parent="#courseAccordion">
+                {% for video in orphaned_videos %}
+                <div class="playlist-item video-item"
+                    onclick="playVideo('{{ video.video_url }}', '{{ video.title }}', 'General', this)">
+                    <div class="status-icon"><i class="far fa-circle"></i></div>
+                    <div>
+                        <div class="title-text small mb-1">{{ video.title }}</div>
+                        <div class="d-flex align-items-center text-muted" style="font-size: 0.75rem;">
+                            <i class="fas fa-play-circle me-1 opacity-75"></i>
+                            {{ video.duration or "Video" }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load YouTube IFrame API asynchronously
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    var player;
+    var currentVideoId = null;
+
+    function onYouTubeIframeAPIReady() {
+        console.log("YouTube API Ready");
+    }
+
+    function onPlayerStateChange(event) {
+        var btn = document.getElementById('playPauseBtn');
+        if (event.data == YT.PlayerState.PLAYING) {
+            btn.innerHTML = '<i class="fas fa-pause"></i>';
+        } else {
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+        }
+    }
+
+    function getYoutubeId(url) {
+        if (!url) return null;
+        url = url.trim();
+        var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+        var match = url.match(regExp);
+        return (match && match[2].length == 11) ? match[2] : null;
+    }
+
+    function playVideo(url, title, sectionTitle, element) {
+        var videoId = getYoutubeId(url);
+
+        if (videoId) {
+            currentVideoId = videoId;
+            document.getElementById('noVideoMessage').classList.remove('d-flex');
+            document.getElementById('noVideoMessage').classList.add('d-none');
+
+            // Show controls
+            document.getElementById('customControls').style.opacity = '1';
+
+            if (player) {
+                player.loadVideoById(videoId);
+            } else {
+                player = new YT.Player('mainPlayer', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: videoId,
+                    playerVars: {
+                        'playsinline': 1,
+                        'controls': 0, // Hide default YT controls
+                        'rel': 0,
+                        'modestbranding': 1
+                    },
+                    events: {
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+
+            // UI States
+            document.querySelectorAll('.playlist-item').forEach(el => {
+                el.classList.remove('active');
+                el.querySelector('.status-icon i').className = 'far fa-circle';
+            });
+
+            if (element) {
+                element.classList.add('active');
+                element.querySelector('.status-icon i').className = 'fas fa-play-circle';
+            }
+
+        } else {
+            console.error("Invalid YouTube URL:", url);
+            alert("Could not load video. Invalid YouTube URL format.");
+        }
+    }
+
+    // Custom Control Functions
+    function togglePlay() {
+        if (!player) return;
+        var state = player.getPlayerState();
+        if (state == YT.PlayerState.PLAYING) {
+            player.pauseVideo();
+        } else {
+            player.playVideo();
+        }
+    }
+
+    function seek(seconds) {
+        if (player) {
+            var currentTime = player.getCurrentTime();
+            player.seekTo(currentTime + seconds, true);
+        }
+    }
+
+    function toggleFullscreen() {
+        var elem = document.getElementById("videoContainer");
+        if (!document.fullscreenElement) {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) { /* IE11 */
+                elem.msRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    // Auto-play first video if available
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(() => {
+            var firstVideo = document.querySelector('.video-item');
+            if (firstVideo) {
+                firstVideo.click();
+            } else {
+                document.getElementById('noVideoMessage').classList.remove('d-none');
+                document.getElementById('noVideoMessage').classList.add('d-flex');
+            }
+        }, 500);
+    });
+</script>
+{% endblock %}

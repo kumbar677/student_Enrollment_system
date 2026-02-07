@@ -1,132 +1,210 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Overview{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <h2>Admin Dashboard</h2>
-        <p class="text-muted">Overview of the system statistics.</p>
+<div class="row g-4 mb-4">
+    <!-- Student Stats -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-scale overflow-hidden">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start z-1 position-relative">
+                    <div>
+                        <p class="text-uppercase text-muted fw-bold small mb-1 ls-1">Total Students</p>
+                        <h2 class="display-5 fw-bold text-dark mb-0">{{ total_students }}</h2>
+                    </div>
+                    <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-3 p-3">
+                        <i class="fas fa-user-graduate fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-success small fw-bold"><i class="fas fa-arrow-up me-1"></i> 12%</span>
+                    <a href="{{ url_for('admin.manage_students') }}"
+                        class="text-primary text-decoration-none small fw-bold stretched-link">View All <i
+                            class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+
+                <!-- Decorative Blob -->
+                <div class="position-absolute bottom-0 end-0 opacity-10" style="transform: translate(30%, 30%);">
+                    <i class="fas fa-user-graduate fa-10x text-primary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Stats -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-scale overflow-hidden">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start z-1 position-relative">
+                    <div>
+                        <p class="text-uppercase text-muted fw-bold small mb-1 ls-1">Active Courses</p>
+                        <h2 class="display-5 fw-bold text-dark mb-0">{{ total_courses }}</h2>
+                    </div>
+                    <div class="icon-shape bg-success bg-opacity-10 text-success rounded-3 p-3">
+                        <i class="fas fa-book-open fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-success small fw-bold"><i class="fas fa-plus me-1"></i> New Added</span>
+                    <a href="{{ url_for('admin.manage_courses') }}"
+                        class="text-success text-decoration-none small fw-bold stretched-link">Manage <i
+                            class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrollment Stats -->
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-scale overflow-hidden">
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start z-1 position-relative">
+                    <div>
+                        <p class="text-uppercase text-muted fw-bold small mb-1 ls-1">Enrollments</p>
+                        <h2 class="display-5 fw-bold text-dark mb-0">{{ total_enrollments }}</h2>
+                    </div>
+                    <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-3 p-3">
+                        <i class="fas fa-file-signature fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">This Month</span>
+                    <a href="{{ url_for('admin.enrollments') }}"
+                        class="text-warning text-decoration-none small fw-bold stretched-link">Details <i
+                            class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title">Total Students</h5>
-                        <h2 class="mb-0">{{ total_students }}</h2>
-                    </div>
-                    <i class="fas fa-user-graduate fa-3x opacity-50"></i>
+<div class="row g-4">
+    <!-- Chart Section -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark">Enrollment Analytics</h6>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-light rounded-circle" data-bs-toggle="dropdown"><i
+                            class="fas fa-ellipsis-h"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm">
+                        <li><a class="dropdown-item" href="#">Weekly</a></li>
+                        <li><a class="dropdown-item" href="#">Monthly</a></li>
+                    </ul>
                 </div>
             </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" href="{{ url_for('admin.manage_students') }}">View
-                    Details</a>
-                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="dashboardChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title">Total Courses</h5>
-                        <h2 class="mb-0">{{ total_courses }}</h2>
-                    </div>
-                    <i class="fas fa-book fa-3x opacity-50"></i>
-                </div>
-            </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" href="{{ url_for('admin.manage_courses') }}">View Details</a>
-                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card bg-warning text-white mb-4">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title">Enrollments</h5>
-                        <h2 class="mb-0">{{ total_enrollments }}</h2>
-                    </div>
-                    <i class="fas fa-clipboard-list fa-3x opacity-50"></i>
-                </div>
-            </div>
-            <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" href="{{ url_for('admin.enrollments') }}">View Details</a>
-                <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-md-8">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Enrollment Analytics</h6>
-            </div>
-            <div class="card-body">
-                <canvas id="myChart" data-students="{{ total_students }}" data-courses="{{ total_courses }}"
-                    data-enrollments="{{ total_enrollments }}"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+    <!-- Quick Actions & System Health -->
+    <div class="col-lg-4">
+        <!-- Quick Actions -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold text-dark">Quick Actions</h6>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('admin.generate_report') }}" class="btn btn-info text-white"><i
-                            class="fas fa-file-pdf me-2"></i>Generate PDF Report</a>
-                    <a href="{{ url_for('admin.settings') }}" class="btn btn-secondary"><i
-                            class="fas fa-cog me-2"></i>Settings</a>
+                    <a href="{{ url_for('admin.generate_report') }}"
+                        class="btn btn-primary d-flex align-items-center justify-content-center p-2 mb-1">
+                        <i class="fas fa-file-download me-2"></i> Generate Report
+                    </a>
+                    <a href="{{ url_for('admin.settings') }}"
+                        class="btn btn-light d-flex align-items-center justify-content-center p-2 text-dark border">
+                        <i class="fas fa-cogs me-2 text-secondary"></i> System Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold text-dark">System Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-bold text-muted">Server Load</span>
+                        <span class="small text-success fw-bold">Optimal</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 25%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-bold text-muted">Database Storage</span>
+                        <span class="small text-primary fw-bold">12% Used</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" style="width: 12%"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-bold text-muted">API Latency</span>
+                        <span class="small text-info fw-bold">45ms</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-info" style="width: 15%"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-    // Simple Chart.js example
     document.addEventListener("DOMContentLoaded", function () {
-        var canvas = document.getElementById('myChart');
-        var ctx = canvas.getContext('2d');
+        // Mock Chart Data - In real app, pass data from Flask
+        const ctx = document.getElementById('dashboardChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.4)'); // Primary color similar to theme
+        gradient.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
 
-        // Parse data from data attributes
-        var students = parseInt(canvas.dataset.students) || 0;
-        var courses = parseInt(canvas.dataset.courses) || 0;
-        var enrollments = parseInt(canvas.dataset.enrollments) || 0;
-
-        var myChart = new Chart(ctx, {
-            type: 'bar',
+        new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: ['Students', 'Courses', 'Enrollments'],
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                 datasets: [{
-                    label: 'System Count',
-                    data: [students, courses, enrollments],
-                    backgroundColor: [
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(75, 192, 192, 0.2)',
-                        'rgba(255, 206, 86, 0.2)'
-                    ],
-                    borderColor: [
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(75, 192, 192, 1)',
-                        'rgba(255, 206, 86, 1)'
-                    ],
-                    borderWidth: 1
+                    label: 'Enrollments',
+                    data: [12, 19, 15, 25, 22, 30],
+                    borderColor: '#4F46E5',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#4F46E5',
+                    pointRadius: 4
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 4], color: '#f3f4f6', drawBorder: false },
+                        ticks: { font: { family: 'Inter' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Inter' } }
                     }
                 }
             }

@@ -9,10 +9,11 @@ with app.app_context():
         with db.engine.connect() as conn:
             # Simple check or just try-except
             try:
-                conn.execute(text("ALTER TABLE courses ADD COLUMN link VARCHAR(255)"))
+                conn.execute(text("ALTER TABLE enrollments ADD COLUMN transaction_reference VARCHAR(100)"))
+                conn.execute(text("ALTER TABLE enrollments ADD COLUMN receipt_image VARCHAR(255)"))
                 conn.commit()
-                print("Successfully added 'link' column to 'courses' table.")
+                print("Successfully added columns to 'enrollments' table.")
             except Exception as e:
-                print(f"Column might already exist or error: {e}")
+                print(f"Columns might already exist or error: {e}")
     except Exception as e:
         print(f"Error connecting or executing: {e}")

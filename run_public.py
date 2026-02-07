@@ -36,6 +36,9 @@ def start_app_with_tunnel():
     print("   (Share this link to open on any mobile)")
     print("="*60)
 
+    # Store public URL in config for email links
+    app.config['PUBLIC_URL'] = public_url
+
     # Update app to run without reloader to prevent creating multiple tunnels
     app.run(port=PORT, debug=False)
 

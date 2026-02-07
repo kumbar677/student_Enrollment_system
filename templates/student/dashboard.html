@@ -1,75 +1,259 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="row mb-4">
-    <div class="col-md-12">
-        <h2>Welcome, {{ current_user.name }}!</h2>
-        <p class="text-muted">Manage your profile and track your enrollments.</p>
-    </div>
-</div>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+<style>
+    /* Dashboard Specific Styles */
+    .dashboard-hero {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-radius: 1.5rem;
+        padding: 3rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+    }
 
-<div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body text-center">
-                <i class="fas fa-user-circle fa-5x text-secondary mb-3"></i>
-                <h5 class="card-title">{{ current_user.name }}</h5>
-                <p class="text-muted">{{ current_user.email }}</p>
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('student.profile') }}" class="btn btn-primary">Edit Profile</a>
-                </div>
+    .hero-pattern {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background-image: radial-gradient(white 1px, transparent 1px);
+        background-size: 30px 30px;
+        opacity: 0.1;
+    }
+
+    .stat-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transition: transform 0.3s;
+        /* height: 100%; removed to fix sidebar alignment */
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .course-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .course-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transition: all 0.3s;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .course-card-header {
+        height: 120px;
+        background: linear-gradient(to right, #f8fafc, #e2e8f0);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .course-icon-lg {
+        font-size: 3rem;
+        color: #94a3b8;
+    }
+
+    .status-badge {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .status-active {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-pending {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .status-dropped {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-slide-up">
+    <!-- Hero Section -->
+    <div class="dashboard-hero">
+        <div class="hero-pattern"></div>
+        <div class="position-relative z-10 d-flex justify-content-between align-items-center flex-wrap gap-4">
+            <div>
+                <h1 class="fw-bold mb-2">Welcome back, {{ current_user.name }}! 👋</h1>
+                <p class="mb-0 opacity-90 text-lg">You are making great progress. Keep it up!</p>
+            </div>
+            <div>
+                <a href="{{ url_for('student.courses') }}" class="btn btn-light fw-bold shadow-sm">
+                    <i class="fas fa-search me-2"></i> Browse Courses
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-md-8">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">My Enrollments</h5>
-            </div>
-            <div class="card-body">
-                {% if enrollments %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Course Code</th>
-                                <th>Course Name</th>
-                                <th>Date Enrolled</th>
-                                <th>Course Link</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for enroll in enrollments %}
-                            <tr>
-                                <td>{{ enroll.course.course_code }}</td>
-                                <td>{{ enroll.course.name }}</td>
-                                <td>{{ enroll.date_enrolled.strftime('%Y-%m-%d') }}</td>
-                                <td>
-                                    {% if enroll.course.link %}
-                                    <a href="{{ enroll.course.link }}" target="_blank" class="btn btn-sm btn-info">
-                                        <i class="fas fa-link"></i> Open Link
-                                    </a>
-                                    {% else %}
-                                    <span class="text-muted">No Link</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-success">{{ enroll.status }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <div class="row g-4">
+        <!-- Sidebar / Profile Stats -->
+        <div class="col-lg-3">
+            <div class="stat-card mb-4 text-center">
+                <div class="position-relative d-inline-block mb-3">
+                    {% if current_user.student_details and current_user.student_details.profile_image %}
+                    <img src="{{ url_for('static', filename=current_user.student_details.profile_image) }}"
+                        class="rounded-circle shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-indigo-100 text-indigo-600 d-flex align-items-center justify-content-center fw-bold fs-2 mx-auto"
+                        style="width: 80px; height: 80px; background: #e0e7ff; color: #4338ca;">
+                        {{ current_user.name[0]|upper }}
+                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('student.profile') }}"
+                        class="position-absolute bottom-0 end-0 bg-white shadow-sm p-1 rounded-circle"
+                        style="width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                        <i class="fas fa-pen fa-xs"></i>
+                    </a>
                 </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <p class="text-muted">You haven't enrolled in any courses yet.</p>
-                    <a href="{{ url_for('student.courses') }}" class="btn btn-outline-primary">Browse Courses</a>
+                <h5 class="fw-bold mb-1">{{ current_user.name }}</h5>
+                <p class="text-muted small mb-3">{{ current_user.email }}</p>
+                <div class="d-grid">
+                    <a href="{{ url_for('student.profile') }}" class="btn btn-outline-primary btn-sm rounded-pill">View
+                        Profile</a>
                 </div>
-                {% endif %}
             </div>
+
+            <!-- Stats -->
+            <div class="stat-card">
+                <h6 class="fw-bold text-muted text-uppercase small mb-4">Your Overview</h6>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="stat-icon bg-indigo-50 text-indigo-600 me-3"
+                        style="background: #e0e7ff; color: #4338ca;">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">{{ enrollments|length }}</h4>
+                        <small class="text-muted">Enrolled Courses</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-emerald-50 text-emerald-600 me-3"
+                        style="background: #d1fae5; color: #059669;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">0</h4>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <h4 class="fw-bold mb-4 text-dark flex items-center gap-2">
+                <i class="fas fa-layer-group text-primary"></i> My Enrollments
+            </h4>
+
+            {% if enrollments %}
+            <div class="course-grid">
+                {% for enroll in enrollments %}
+                <div class="course-card">
+                    <div class="course-card-header">
+                        <i class="fas fa-laptop-code course-icon-lg"></i>
+                        {% if enroll.status == 'enrolled' %}
+                        <span class="status-badge status-active">Active</span>
+                        {% elif enroll.status == 'pending_payment' %}
+                        <span class="status-badge status-pending">Unpaid</span>
+                        {% else %}
+                        <span class="status-badge status-dropped">{{ enroll.status }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="p-4">
+                        <div class="mb-2">
+                            <small class="text-muted fw-bold">{{ enroll.course.course_code }}</small>
+                        </div>
+                        <h5 class="fw-bold mb-2 text-dark">{{ enroll.course.name }}</h5>
+                        <p class="text-muted small mb-4 line-clamp-2">Master this course to advance your skills.</p>
+
+                        <div class="d-flex justify-content-between align-items-center">
+                            {% if enroll.status == 'enrolled' %}
+                            <a href="{{ url_for('student.watch_course', course_id=enroll.course.id) }}"
+                                class="btn btn-primary btn-sm rounded-pill px-3">
+                                <i class="fas fa-play me-1"></i> Continue
+                            </a>
+                            {% elif enroll.status == 'pending_payment' %}
+                            <a href="{{ url_for('student.payment_page', enrollment_id=enroll.id) }}"
+                                class="btn btn-warning btn-sm rounded-pill px-3 text-white">
+                                <i class="fas fa-credit-card me-1"></i> Pay Now
+                            </a>
+                            {% else %}
+                            <button disabled class="btn btn-light btn-sm rounded-pill px-3">Locked</button>
+                            {% endif %}
+
+                            <small class="text-muted" style="font-size: 0.75rem;">
+                                On {{ enroll.date_enrolled.strftime('%b %d') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5 bg-white rounded-3 shadow-sm border border-light">
+                <div class="mb-3 text-muted opacity-25">
+                    <i class="fas fa-rocket fa-4x"></i>
+                </div>
+                <h5 class="fw-bold">No courses yet</h5>
+                <p class="text-muted mb-4">Explore our catalog and start learning today!</p>
+                <a href="{{ url_for('student.courses') }}" class="modern-btn d-inline-flex"
+                    style="width: auto; padding: 0.75rem 2rem;">
+                    Browse Library
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

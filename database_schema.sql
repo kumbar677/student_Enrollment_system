@@ -9,7 +9,9 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(120) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'student',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    reset_otp VARCHAR(6),
+    reset_otp_expiry DATETIME
 );
 
 -- 2. Courses Table
@@ -21,6 +23,10 @@ CREATE TABLE IF NOT EXISTS courses (
     link VARCHAR(255),
     credits INT NOT NULL,
     seats INT NOT NULL DEFAULT 30,
+    fee DECIMAL(10, 2) NOT NULL DEFAULT 500.00,
+    category VARCHAR(50) NOT NULL DEFAULT 'General',
+    level VARCHAR(50) DEFAULT '1st PU',
+    stream VARCHAR(50) DEFAULT 'Science',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -44,9 +50,33 @@ CREATE TABLE IF NOT EXISTS enrollments (
     status VARCHAR(20) DEFAULT 'enrolled',
     FOREIGN KEY (student_id) REFERENCES student_details(id) ON DELETE CASCADE,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
-    UNIQUE KEY _student_course_uc (student_id, course_id)
+    UNIQUE KEY _student_course_uc (student_id, course_id),
+
+    -- Payment Details
+    transaction_reference VARCHAR(100),
+    receipt_image VARCHAR(255)
 );
 
--- Optional: Insert Default Admin (Password: admin123)
--- Note: In a real scenario, you should use the programmed hash, this is just a placeholder example or you'd need to generate the hash manually.
--- INSERT INTO users (name, email, password_hash, role) VALUES ('Admin User', 'admin@university.com', 'scrypt:32768:8:1$PWD_HASH_HERE', 'admin');
+-- 5. Course Sections Table
+CREATE TABLE IF NOT EXISTS course_sections (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL,
+    title VARCHAR(100) NOT NULL,
+    section_order INT DEFAULT 0,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
+
+-- 6. Course Videos Table
+CREATE TABLE IF NOT EXISTS course_videos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT NOT NULL,
+    section_id INT,
+    title VARCHAR(100) NOT NULL,
+    video_url VARCHAR(255) NOT NULL,
+    duration VARCHAR(20),
+    sequence_order INT DEFAULT 0,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (section_id) REFERENCES course_sections(id) ON DELETE CASCADE
+);
+
+

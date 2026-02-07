@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+<style>
+    /* Payment Page Specifics */
+    .payment-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .payment-card {
+        background: white;
+        border-radius: 1.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    @media (min-width: 768px) {
+        .payment-card {
+            flex-direction: row;
+        }
+    }
+
+    .order-summary {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+        padding: 2.5rem;
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .order-summary::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+    }
+
+    .order-summary::after {
+        content: '';
+        position: absolute;
+        bottom: -30px;
+        left: -30px;
+        width: 100px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+    }
+
+    .payment-details {
+        flex: 1.5;
+        padding: 2.5rem;
+        background: white;
+    }
+
+    .method-tab {
+        border: 2px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 1rem;
+    }
+
+    .method-tab:hover {
+        border-color: var(--primary);
+        background: #f8fafc;
+    }
+
+    .method-tab.active {
+        border-color: var(--primary);
+        background: #e0e7ff;
+        color: var(--primary-dark);
+        font-weight: bold;
+    }
+
+    .nav-pills .nav-link {
+        background: none;
+        color: #64748b;
+        border: none;
+        padding: 0;
+    }
+
+    .nav-pills .nav-link.active {
+        background: none;
+        color: var(--primary-dark);
+    }
+
+    .qr-container {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 2px dashed #cbd5e1;
+        display: inline-block;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-slide-up payment-container">
+    <div class="payment-card">
+
+        <!-- Order Summary Side -->
+        <div class="order-summary">
+            <h4 class="fw-bold mb-4 opacity-90">Order Summary</h4>
+
+            <div class="mb-4">
+                <small class="text-white-50 text-uppercase ls-1">Course</small>
+                <h3 class="fw-bold mb-1">{{ course.name }}</h3>
+                <span class="badge bg-white text-dark bg-opacity-10 backdrop-blur">{{ course.course_code }}</span>
+            </div>
+
+            <div class="py-4 border-top border-bottom border-white border-opacity-10 mb-4">
+                <div class="d-flex justify-content-between mb-2 opacity-75">
+                    <span>Course Fee</span>
+                    <span>₹{{ "%.2f"|format(course.fee) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2 opacity-75">
+                    <span>Taxes</span>
+                    <span>₹0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mt-3 fw-bold fs-5">
+                    <span>Total</span>
+                    <span>₹{{ "%.2f"|format(course.fee) }}</span>
+                </div>
+            </div>
+
+            <div class="mt-auto">
+                <p class="small text-white-50 mb-0">
+                    <i class="fas fa-lock me-1"></i> Secure 256-bit SSL Encrypted payment.
+                </p>
+            </div>
+        </div>
+
+        <!-- Payment Form Side -->
+        <div class="payment-details">
+            <h4 class="fw-bold mb-4 text-dark">Select Payment Method</h4>
+
+            <ul class="nav nav-pills mb-4 gap-2" id="paymentMethods" role="tablist">
+                <li class="nav-item flex-grow-1" role="presentation">
+                    <div class="method-tab active" data-bs-target="#card" data-bs-toggle="pill" role="tab">
+                        <i class="fas fa-credit-card mb-2 d-block fs-4"></i>
+                        Card
+                    </div>
+                </li>
+                <li class="nav-item flex-grow-1" role="presentation">
+                    <div class="method-tab" data-bs-target="#upi" data-bs-toggle="pill" role="tab">
+                        <i class="fas fa-qrcode mb-2 d-block fs-4"></i>
+                        UPI
+                    </div>
+                </li>
+                <li class="nav-item flex-grow-1" role="presentation">
+                    <div class="method-tab" data-bs-target="#bank" data-bs-toggle="pill" role="tab">
+                        <i class="fas fa-university mb-2 d-block fs-4"></i>
+                        Bank
+                    </div>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Card Payment -->
+                <div class="tab-pane fade show active" id="card" role="tabpanel">
+                    <form method="POST" action="{{ url_for('student.process_payment', enrollment_id=enrollment.id) }}">
+                        <input type="hidden" name="payment_method" value="card">
+
+                        <div class="modern-input-group">
+                            <label class="modern-label">Name on Card</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" class="modern-input" name="card_name" placeholder="John Doe"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="modern-input-group">
+                            <label class="modern-label">Card Number</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-credit-card input-icon"></i>
+                                <input type="text" class="modern-input" name="card_number"
+                                    placeholder="0000 0000 0000 0000" maxlength="19" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="modern-input-group">
+                                    <label class="modern-label">Expiry</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-calendar input-icon"></i>
+                                        <input type="text" class="modern-input" name="expiry" placeholder="MM/YY"
+                                            maxlength="5" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="modern-input-group">
+                                    <label class="modern-label">CVV</label>
+                                    <div class="input-wrapper">
+                                        <i class="fas fa-lock input-icon"></i>
+                                        <input type="password" class="modern-input" name="cvv" placeholder="123"
+                                            maxlength="3" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="modern-btn mt-3">
+                            Confirm Pay ₹{{ "%.2f"|format(course.fee) }}
+                        </button>
+                    </form>
+                </div>
+
+                <!-- UPI Payment -->
+                <div class="tab-pane fade" id="upi" role="tabpanel">
+                    <form method="POST" action="{{ url_for('student.process_payment', enrollment_id=enrollment.id) }}">
+                        <input type="hidden" name="payment_method" value="upi">
+
+                        <div class="text-center">
+                            <div class="qr-container">
+                                <img src="{{ qr_code }}" alt="UPI QR Code" class="img-fluid"
+                                    style="width: 180px; height: 180px;">
+                            </div>
+                            <p class="text-muted small mb-4">Scan using any UPI App (GPay, PhonePe, Paytm)</p>
+
+                            <div class="d-flex justify-content-center gap-3 mb-4">
+                                <a href="{{ upi_link | replace('upi://', 'phonepe://') }}"
+                                    class="btn btn-outline-primary rounded-pill px-4">
+                                    <i class="fas fa-mobile-alt me-2"></i> PhonePe
+                                </a>
+                                <a href="{{ upi_link | replace('upi://', 'tez://upi/') }}"
+                                    class="btn btn-outline-success rounded-pill px-4">
+                                    <i class="fab fa-google-pay me-2"></i> GPay
+                                </a>
+                            </div>
+
+                            <button type="submit" class="modern-btn" style="background: #10B981;">
+                                <i class="fas fa-check-circle"></i> Payment Completed
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bank Transfer -->
+                <div class="tab-pane fade" id="bank" role="tabpanel">
+                    <div class="text-center">
+                        <div class="p-4 bg-light rounded-3 mb-4 border border-dashed">
+                            <i class="fas fa-university fa-3x text-muted mb-3"></i>
+                            <h5 class="fw-bold">Offline Bank Challan</h5>
+                            <p class="text-muted small">Download the challan and pay at any SBI branch.</p>
+                        </div>
+
+                        <button onclick="window.print()"
+                            class="btn btn-outline-primary w-100 py-3 rounded-pill fw-bold border-2 mb-3">
+                            <i class="fas fa-file-download me-2"></i> Download Challan
+                        </button>
+
+                        <p class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Your status will update in 2-3 working days.
+                        </p>
+                    </div>
+
+                    <!-- Hidden Printable Section (Simplified for brevity, styled for print) -->
+                    <div class="d-none d-print-block mt-4">
+                        <div class="border border-dark p-4">
+                            <h3 class="text-center fw-bold">SBI FEE CHALLAN</h3>
+                            <p class="text-center">Student Copy</p>
+                            <table class="table table-bordered border-dark mt-3">
+                                <tr>
+                                    <th>Student</th>
+                                    <td>{{ current_user.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Amount</th>
+                                    <td>₹{{ "%.2f"|format(course.fee) }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('student.dashboard') }}" class="text-muted text-decoration-none small hover-underline">
+            <i class="fas fa-arrow-left me-1"></i> Cancel Payment
+        </a>
+    </div>
+</div>
+
+<script>
+    // Simple tab switching logic for custom divs
+    document.querySelectorAll('.method-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active from all tabs
+            document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+            // Add active to clicked
+            tab.classList.add('active');
+
+            // Hide all tab panes
+            document.querySelectorAll('.tab-pane').forEach(p => {
+                p.classList.remove('show', 'active');
+            });
+
+            // Show target
+            const targetId = tab.getAttribute('data-bs-target');
+            const targetPane = document.querySelector(targetId);
+            if (targetPane) {
+                targetPane.classList.add('show', 'active');
+            }
+        });
+    });
+</script>
+
+{% endblock %}
