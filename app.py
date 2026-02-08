@@ -43,6 +43,26 @@ def create_app():
     def index():
         return redirect(url_for('auth.login'))
 
+    @app.route('/debug-db')
+    def debug_db():
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            users_columns = []
+            if 'users' in tables:
+                for col in inspector.get_columns('users'):
+                    users_columns.append(f"{col['name']} ({col['type']})")
+            
+            return f"""
+            <h1>Database Debug</h1>
+            <p><strong>Database URL:</strong> {app.config['SQLALCHEMY_DATABASE_URI'].split('@')[-1]}</p>
+            <p><strong>Tables:</strong> {tables}</p>
+            <p><strong>Users Columns:</strong> {users_columns}</p>
+            """
+        except Exception as e:
+            return f"<h1>Debug Error</h1><p>{e}</p>"
+
     return app
 
 
