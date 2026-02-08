@@ -54,11 +54,35 @@ def create_app():
                 for col in inspector.get_columns('users'):
                     users_columns.append(f"{col['name']} ({col['type']})")
             
+            # Fetch users
+            users = User.query.all()
+            user_list = [f"{u.email} ({u.role})" for u in users]
+
+            # Test SMTP
+            import smtplib
+            smtp_status = "Unknown"
+            try:
+                mail_server = app.config.get('MAIL_SERVER', 'smtp.gmail.com')
+                mail_port = app.config.get('MAIL_PORT', 587)
+                mail_username = app.config.get('MAIL_USERNAME')
+                mail_password = app.config.get('MAIL_PASSWORD')
+                
+                server = smtplib.SMTP(mail_server, mail_port)
+                server.starttls()
+                login_resp = server.login(mail_username, mail_password)
+                server.quit()
+                smtp_status = f"✅ Connected to {mail_server}: {login_resp}"
+            except Exception as smtp_err:
+                smtp_status = f"❌ SMTP Error: {smtp_err}"
+            
             return f"""
-            <h1>Database Debug</h1>
+            <h1>Database & Email Debug</h1>
             <p><strong>Database URL:</strong> {app.config['SQLALCHEMY_DATABASE_URI'].split('@')[-1]}</p>
             <p><strong>Tables:</strong> {tables}</p>
             <p><strong>Users Columns:</strong> {users_columns}</p>
+            <p><strong>Existing Users:</strong> {user_list}</p>
+             <hr>
+            <p><strong>SMTP Status:</strong> {smtp_status}</p>
             """
         except Exception as e:
             return f"<h1>Debug Error</h1><p>{e}</p>"
