@@ -54,8 +54,17 @@ with app.app_context():
     try:
         db.create_all()
         print("✅ Database tables created successfully.")
+        
+        # Seed Admin User if not exists
+        if not User.query.filter_by(role='admin').first():
+            admin = User(name='Admin User', email='ACV@gmail.com', role='admin')
+            admin.set_password('ACV123')
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Admin user created/verified.")
+            
     except Exception as e:
-        print(f"⚠️ Error creating database tables: {e}")
+        print(f"⚠️ Error initializing database: {e}")
 
 
 # Local development only
