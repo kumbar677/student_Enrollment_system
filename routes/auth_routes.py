@@ -84,66 +84,72 @@ def forgot_password():
         return redirect(url_for('student.dashboard'))
 
     if request.method == 'POST':
-        email = request.form.get('email')
-        user = User.query.filter_by(email=email).first()
-        
-        if user:
-            import random
-            from datetime import timedelta
+        try:
+            email = request.form.get('email')
+            user = User.query.filter_by(email=email).first()
             
-            # Generate 6-digit numeric OTP
-            otp = f"{random.randint(100000, 999999)}"
-            user.reset_otp = otp
-            user.reset_otp_expiry = datetime.utcnow() + timedelta(minutes=15)
-            db.session.commit()
-            
-            # Also generate secure token for the link (optional, but good for one-click)
-            # OR just link to manual reset page with OTP pre-filled? No, users like links.
-            # But the user specifically complained about "manual token send a number".
-            # Let's send the link AND the OTP number.
-            
-            # Create a link that auto-fills the OTP on the manual reset page
-            reset_link = f"http://{request.host}{url_for('auth.manual_reset', otp=otp)}"
-            
-            print(f"\n[DEBUG] Verification OTP: {otp}\n[DEBUG] Link: {reset_link}\n")
-            
-            from flask import current_app
-            from flask_mail import Message
-            
-            msg = Message('Password Reset Code',
-                          sender=current_app.config['MAIL_USERNAME'],
-                          recipients=[user.email])
-            
-            msg.body = f'''Your Password Reset Code is: {otp}
+            if user:
+                import random
+                from datetime import timedelta
+                
+                # Generate 6-digit numeric OTP
+                otp = f"{random.randint(100000, 999999)}"
+                user.reset_otp = otp
+                user.reset_otp_expiry = datetime.utcnow() + timedelta(minutes=15)
+                db.session.commit()
+                
+                # Create a link that auto-fills the OTP on the manual reset page
+                reset_link = f"http://{request.host}{url_for('auth.manual_reset', otp=otp)}"
+                
+                print(f"\n[DEBUG] Verification OTP: {otp}\n[DEBUG] Link: {reset_link}\n")
+                
+                from flask import current_app
+                from flask_mail import Message
+                
+                # Use default sender if MAIL_USERNAME is not set/valid
+                sender_email = current_app.config.get('MAIL_USERNAME') or 'ikumbar59@gmail.com'
+
+                msg = Message('Password Reset Code',
+                              sender=sender_email,
+                              recipients=[user.email])
+                
+                msg.body = f'''Your Password Reset Code is: {otp}
 
 Enter this code on the password reset page, or click this link:
 {reset_link}
 
 This code expires in 15 minutes.
 '''
-            msg.html = f'''
-            <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
-                <h2>Password Reset Request</h2>
-                <p>Your Verification Code is:</p>
-                <div style="font-size: 2em; letter-spacing: 5px; font-weight: bold; background: #f3f4f6; padding: 10px; margin: 20px 0;">{otp}</div>
-                <p>Enter this code manually, or click the button below:</p>
-                <a href="{reset_link}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-                <p style="margin-top: 20px; color: #6b7280; font-size: 0.9em;">If you did not request this, please ignore this email.</p>
-            </div>
-            '''
-            
-            mail = current_app.extensions['mail']
-            try:
+                msg.html = f'''
+                <div style="font-family: Arial, sans-serif; padding: 20px; text-align: center;">
+                    <h2>Password Reset Request</h2>
+                    <p>Your Verification Code is:</p>
+                    <div style="font-size: 2em; letter-spacing: 5px; font-weight: bold; background: #f3f4f6; padding: 10px; margin: 20px 0;">{otp}</div>
+                    <p>Enter this code manually, or click the button below:</p>
+                    <a href="{reset_link}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+                    <p style="margin-top: 20px; color: #6b7280; font-size: 0.9em;">If you did not request this, please ignore this email.</p>
+                </div>
+                '''
+                
+                mail = current_app.extensions.get('mail')
+                if not mail:
+                    # Fallback initialization if mail extension is missing
+                    from flask_mail import Mail
+                    mail = Mail(current_app)
+
                 mail.send(msg)
                 flash('Check your email for the 6-digit verification code.', 'info')
-                return redirect(url_for('auth.manual_reset')) # Send them to enter code page
-            except Exception as e:
-                flash(f'Error sending email: {e}', 'danger')
-                
-        else:
-            flash('Email address not found.', 'danger')
-             
-        return redirect(url_for('auth.manual_reset'))
+                return redirect(url_for('auth.manual_reset')) 
+
+            else:
+                flash('Email address not found.', 'danger')
+                 
+            return redirect(url_for('auth.manual_reset'))
+
+        except Exception as e:
+            print(f"ERROR: {e}")
+            flash(f"Error: {str(e)}", 'danger')
+            return redirect(url_for('auth.forgot_password'))
         
     return render_template('auth/forgot_password.html')
 
