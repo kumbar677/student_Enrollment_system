@@ -49,6 +49,14 @@ def create_app():
 # ✅ WSGI app for Gunicorn (RENDER NEEDS THIS)
 app = create_app()
 
+# ✅ Create tables on Render startup
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Database tables created successfully.")
+    except Exception as e:
+        print(f"⚠️ Error creating database tables: {e}")
+
 
 # Local development only
 if __name__ == '__main__':
